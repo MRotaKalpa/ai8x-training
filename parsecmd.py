@@ -233,6 +233,9 @@ def get_parser(model_names, dataset_names):
     parser.add_argument('--sparsity-perf', action='store_true', default=False,
                         help='when determining best epoch, use sparsity as primary key')
 
+    parser.add_argument('--exp-name', dest='exp_name', type=str, default='Max78000',
+                        help='Experiment name for tracking MLFlow')
+
     obj_detection_args = parser.add_argument_group('Object Detection Arguments')
     obj_detection_args.add_argument('--enable-obj-detection', '--obj-detection',
                                     dest='obj_detection', default=False,

@@ -116,6 +116,8 @@ from losses.multiboxloss import MultiBoxLoss
 from nas import parse_nas_yaml
 from utils import object_detection_utils, parse_obj_detection_yaml
 
+import mlflow
+
 # from range_linear_ai84 import PostTrainLinearQuantizerAI84
 
 matplotlib.use("pgf")
@@ -171,6 +173,8 @@ def main():
 
     # Parse arguments
     args = parsecmd.get_parser(model_names, dataset_names).parse_args()
+
+    mlflow.set_tag("mlflow.runName", args.exp_name)
 
     # Set hardware device
     ai8x.set_device(args.device, args.act_mode_8bit, args.avg_pool_rounding)
@@ -874,6 +878,12 @@ def train(train_loader, model, criterion, optimizer, epoch,
             stats_dict['Time'] = batch_time.mean
             stats = ('Performance/Training/', stats_dict)
 
+            mlflow.log_metrics({
+                f'train_{k}': v
+                for k, v in stats_dict.items()
+                if v is not None
+            })
+
             params = model.named_parameters() if args.log_params_histograms else None
             distiller.log_training_progress(stats,
                                             params,
@@ -1233,13 +1243,25 @@ def _validate(data_loader, model, criterion, loggers, args, epoch=-1, tflogger=N
 
         if not args.regression:
             if args.num_classes > 5:
+                mlflow.log_metrics({
+                    f'val_{k}': v
+                    for k, v in zip(['Top1', 'Top5'], classerr.value())
+                })
                 msglogger.info('==> Top1: %.3f    Top5: %.3f    Loss: %.3f\n',
                                classerr.value()[0], classerr.value()[1],
                                losses['objective_loss'].mean)
             else:
+                mlflow.log_metrics({
+                    f'val_{k}': v
+                    for k, v in zip(['Top1'], classerr.value())
+                })
                 msglogger.info('==> Top1: %.3f    Loss: %.3f\n',
                                classerr.value()[0], losses['objective_loss'].mean)
         else:
+            mlflow.log_metrics({
+                f'val_{k}': v
+                for k, v in zip(['MSE'], classerr.value())
+            })
             msglogger.info('==> MSE: %.5f    Loss: %.3f\n',
                            classerr.value(), losses['objective_loss'].mean)
             return classerr.value(), .0, losses['objective_loss'].mean, 0
@@ -1709,6 +1731,8 @@ if __name__ == '__main__':
         # globals()['range_linear_ai84'] = __import__('range_linear_ai84')
         # sys.path.append('/home/robertmuchsel/Documents/Source/ai84')
         # site.addsitedir("/home/robertmuchsel/Documents/Source/ai84")
+        mlflow.set_tracking_uri('http://0.0.0.0:5000')
+        mlflow.start_run()
         main()
     except KeyboardInterrupt:
         print("\n-- KeyboardInterrupt --")
@@ -1725,6 +1749,7 @@ if __name__ == '__main__':
             msglogger.handlers = handlers_bak
         raise
     finally:
+        mlflow.end_run()
         if msglogger is not None:
             msglogger.info('')
             msglogger.info('Log file for this run: %s', os.path.realpath(msglogger.log_filename))
