@@ -174,7 +174,8 @@ def main():
     # Parse arguments
     args = parsecmd.get_parser(model_names, dataset_names).parse_args()
 
-    mlflow.set_tag("mlflow.runName", args.exp_name)
+    mlflow.set_tracking_uri(f'{args.mlflow_uri}')
+    mlflow.start_run(run_name=args.exp_name)
 
     # Set hardware device
     ai8x.set_device(args.device, args.act_mode_8bit, args.avg_pool_rounding)
@@ -1731,8 +1732,6 @@ if __name__ == '__main__':
         # globals()['range_linear_ai84'] = __import__('range_linear_ai84')
         # sys.path.append('/home/robertmuchsel/Documents/Source/ai84')
         # site.addsitedir("/home/robertmuchsel/Documents/Source/ai84")
-        mlflow.set_tracking_uri('http://0.0.0.0:5000')
-        mlflow.start_run()
         main()
     except KeyboardInterrupt:
         print("\n-- KeyboardInterrupt --")

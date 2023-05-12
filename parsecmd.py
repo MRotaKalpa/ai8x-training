@@ -235,6 +235,8 @@ def get_parser(model_names, dataset_names):
 
     parser.add_argument('--exp-name', dest='exp_name', type=str, default='Max78000',
                         help='Experiment name for tracking MLFlow')
+    parser.add_argument('--mlflow-uri', dest='mlflow_uri', type=str, default='http://0.0.0.0:5000',
+                        help='MLFlow server URI')
 
     obj_detection_args = parser.add_argument_group('Object Detection Arguments')
     obj_detection_args.add_argument('--enable-obj-detection', '--obj-detection',
